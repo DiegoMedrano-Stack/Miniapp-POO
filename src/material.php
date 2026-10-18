@@ -11,7 +11,12 @@ if (!$material) {
     http_response_code(404);
     exit('Material no encontrado');
 }
+$usuarioId = (int) currentUser()['id'];
 
+$prestamoEsMio = $repo->tienePrestamoActivo(
+    $material->getId(),
+    $usuarioId
+);
 require __DIR__ . '/includes/header.php';
 ?>
 <h1><?= htmlspecialchars($material->mostrarFicha()) ?></h1>
@@ -26,11 +31,34 @@ require __DIR__ . '/includes/header.php';
   <dt>Estado</dt><dd><?= $material->isDisponible() ? 'Disponible' : 'Prestado' ?></dd>
 </dl>
 
-<?php if ($material->isDisponible()): ?>
-  <form method="POST" action="prestar.php">
-    <input type="hidden" name="material_id" value="<?= $material->getId() ?>">
-    <button>Pedir prestado</button>
-  </form>
-<?php endif; ?>
 
+
+
+<?php if ($material->isDisponible()): ?>
+
+    <form method="POST" action="prestar.php">
+        <input
+            type="hidden"
+            name="material_id"
+            value="<?= (int) $material->getId() ?>"
+        >
+        <button type="submit">Prestar material</button>
+    </form>
+
+<?php elseif ($prestamoEsMio): ?>
+
+    <form method="POST" action="devolver.php">
+        <input
+            type="hidden"
+            name="material_id"
+            value="<?= (int) $material->getId() ?>"
+        >
+        <button type="submit">Devolver material</button>
+    </form>
+
+<?php else: ?>
+
+    <p>Este material está prestado a otro usuario.</p>
+
+<?php endif; ?>
 <?php require __DIR__ . '/includes/footer.php'; ?>

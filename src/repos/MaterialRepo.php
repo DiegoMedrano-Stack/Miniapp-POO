@@ -51,6 +51,72 @@ class MaterialRepo {
         $stmt->execute([$disponible ? 1 : 0, $id]);
     }
 
+    public function devolverPrestamo(int $materialId, int $usuarioId): bool {
+    $pdo = db();
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare(
+            'SELECT id FROM prestamos
+             WHERE material_id = ?
+               AND usuario_id = ?
+               AND fecha_devolucion IS NULL
+             ORDER BY fecha_prestamo DESC
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$materialId, $usuarioId]);
+
+        $prestamoId = $stmt->fetchColumn();
+
+        if ($prestamoId === false) {
+            $pdo->rollBack();
+            return false;
+        }
+
+        $stmt = $pdo->prepare(
+            'UPDATE prestamos
+             SET fecha_devolucion = NOW()
+             WHERE id = ?'
+        );
+        $stmt->execute([$prestamoId]);
+
+        $stmt = $pdo->prepare(
+            'UPDATE materiales
+             SET disponible = 1
+             WHERE id = ?'
+        );
+        $stmt->execute([$materialId]);
+
+        $pdo->commit();
+        return true;
+
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $e;
+    }
+}
+public function tienePrestamoActivo(
+    int $materialId,
+    int $usuarioId
+): bool {
+    $stmt = db()->prepare(
+        'SELECT 1
+         FROM prestamos
+         WHERE material_id = ?
+           AND usuario_id = ?
+           AND fecha_devolucion IS NULL
+         LIMIT 1'
+    );
+
+    $stmt->execute([$materialId, $usuarioId]);
+
+    return $stmt->fetchColumn() !== false;
+}
     public function registrarPrestamo(int $materialId, int $usuarioId): void {
         $stmt = db()->prepare(
             'INSERT INTO prestamos (material_id, usuario_id) VALUES (?, ?)'

@@ -12,12 +12,11 @@ require __DIR__ . '/includes/header.php';
 
 <ul>
 <?php foreach ($materiales as $m): ?>
+  
   <li>
     <?= htmlspecialchars($m->mostrarFicha()) ?>
     — <?= $m->isDisponible() ? '✅ Disponible' : '❌ Prestado' ?>
-    <?php if ($m->isDisponible()): ?>
-      · <a href="/material.php?id=<?= $m->getId() ?>">Ver ficha</a>
-    <?php endif; ?>
+    · <a href="material.php?id=<?= (int) $m->getId() ?>">Ver ficha</a>
   </li>
 <?php endforeach; ?>
 </ul>
